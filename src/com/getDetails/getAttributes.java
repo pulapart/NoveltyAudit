@@ -6,9 +6,9 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-
 import com.Utils.sendHttpGet;
-import com.Utils.sendHttpPost;
+
+
 
 public class getAttributes {
 	
@@ -16,12 +16,12 @@ public class getAttributes {
 public static void main(String[] args) {
 	
 
-	String merchid = "A2P0YMXEJRD7XR";		
-	String mpid = "US" ;
-	int size = 400;
-	
+	String merchid = "A1Z14AUB2ZPJ4R";		
+	String mpid = "JP" , titlekeywords = "", genkeywords ="";
+	int size = 40;
+		
 	try {
-		String[] sample = fetchSampleasins(merchid, mpid, size);
+		String[] sample = fetchSampleasins(merchid, mpid, titlekeywords, genkeywords,  size);
 	
 		if (sample == null) System.out.println("is null");
 		
@@ -35,7 +35,7 @@ public static void main(String[] args) {
 		for (int i = 0; i < (urls.length); i++) {
 			System.out.println(i +" ---->>> "+urls[i][0]);
 		}
-	
+			
 	} catch (Exception e) {
 		// TODO Auto-generated catch block
 		e.printStackTrace();
@@ -45,7 +45,7 @@ public static void main(String[] args) {
 }	
 	
 	
-public static String[] fetchSampleasins(String merchid, String mpid, int size) throws Exception {
+public static String[] fetchSampleasins(String merchid, String mpid, String titlekeywords, String genkeywords ,int size) throws Exception {
 		
 	try {
 		String qmpid = "", lang="", site = "";
@@ -60,11 +60,12 @@ public static String[] fetchSampleasins(String merchid, String mpid, int size) t
 	    else if (mpid.equals("IT")) { lang = "it_IT" ; site = "www.amazon.it" ;  qmpid = "APJ6JRA9NG5V4";}
 	    int x = randInt(0, 10);
 	    
+	    
 	    String sort = String.valueOf(x) ;
 	        
-	    String getasinquery = "http://"+site+"/gp/internal/search/rsas.html?api=basic&query-searchAlias=&query-node=&query-backbone-node=&query-keywords=&query-merchant-id="+merchid+
+	    String getasinquery = "http://"+site+"/gp/internal/search/rsas.html?api=basic&query-searchAlias=&query-node=&query-backbone-node=&query-keywords="+genkeywords+"&query-merchant-id="+merchid+
 			"&release-ids=&query-marketplace-id="+qmpid+"&query-marketplace-id-override=&query-store=&page=&size="+size+"&sort="+sort+"&product-flavor=&language="+lang+"&eliminate-variation="+
-			"unspecified&products_check=1&query-field-1=search-alias&query-value-1=merchant-items&query-field-2=&query-value-2=&query-field-3=&query-value-3=&query-field-4="+
+			"unspecified&products_check=1&query-field-1=search-alias&query-value-1=merchant-items&query-field-2=field-title&query-value-2="+titlekeywords+"&query-field-3=&query-value-3=&query-field-4="+
 			"&query-value-4=&metadataNames=&weblab-overrides=&explicitRefinements=&flag-field-1=&flag-value-1=&flag-field-2=&flag-value-2=&flag-field-3=&flag-value-3=&flag-field-4="+
 			"&flag-value-4=&search=Search!";
 	 
@@ -137,11 +138,22 @@ public static String[][] fetchUrls(String[] asins, String mplace) throws Excepti
 			
 				if (ttl.text().contains("title")) {						
 					titleion = ttl.text();
-					temp =  titleion.split("'title' => '");
+					temp =  titleion.split("'title' => ");
 					String tempstr = "";
 					try {
 						temp2 = temp[1].split("',");
 						tempstr = temp2[0];
+						tempstr = tempstr.substring(1);
+						
+						if (tempstr.contains("\",          '")) {
+							String[] t2 = tempstr.split("\",          '");
+							tempstr = t2[0].toString();
+						//	System.out.println(tempstr.replace("_x{", "&#x").replace("}", ";"));
+							tempstr = tempstr.replace("_x{", "&#x").replace("}", ";").replace("?", "");
+							
+						}
+						
+						if (tempstr.startsWith("\\")) tempstr = tempstr.substring(1) ;  
 					} catch (Exception e) {
 						tempstr = "couldn't fetch title";
 					}
@@ -175,177 +187,6 @@ public static String[][] fetchUrls(String[] asins, String mplace) throws Excepti
 }
 
 
-
-
-public static String[] fetchTitles(String[] asins, String mpid) throws Exception {
-	
-	if (asins == null) return null;
-
-    String mplace = "";
-
-    if (mpid.equals("US")) { mplace = "1" ; } 
-    else if (mpid.equals("UK")) { mplace = "3";}
-    else if (mpid.equals("CA")) { mplace = "7";}
-    else if (mpid.equals("DE")) { mplace = "4";}
-    else if (mpid.equals("FR")) { mplace = "5";}
-    else if (mpid.equals("IT")) { mplace = "35691";}
-    else if (mpid.equals("ES")) { mplace = "44551"; }
-    else if (mpid.equals("JP")) { mplace = "6"; }
-	
-
-	StringBuilder asin = new StringBuilder();
-	
-	//asins.member.1.asin=B0018EUDHW&asins.member.1.marketplace=1&asins.member.2.asin=B00IMAGING&asins.member.2.marketplace=1&asins.member.3.asin=B000IMAGES&asins.member.3.marketplace=1
-	
-	for (int i = 0; i < asins.length; i++) {
-		asin.append("&asins.member."+(i+1)+".asin=");
-		asin.append(asins[i]);
-		asin.append("&asins.member."+(i+1)+".marketplace="+mplace);		
-	}
-	
-	String key = asin.toString();
-	
-	key = key.substring(1, key.length());
-	
-	String query = "http://imaging-ext-data-agg-prod.amazon.com/?"+key+"&Operation=getASINInfos&ContentType=JSON";
-		
- 	String[] titles = new String[asins.length];
-		try {
-			String titledoc = sendHttpGet.sendGet(query);
-
-			String[] temp = titledoc.split("\"title\":\"");
-			
-			for (int i = 1; i < temp.length; i++) {
-			
-				//"}
-				String tempres = temp[i];
-				
-				String[] t2 = tempres.split("\"}");
-				
-				titles[i-1] = t2[0];	
-			}
-			
-			} catch (IOException e) {
-				e.printStackTrace();
-				return null;
-			}
-		return titles;
-	
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-public static String getImgid(String asin) throws Exception {
-		
-		String getimg = "http://media-bridge.amazon.com/MediaBridge/action/GurupaMediaServiceHTTP?method=Query&minimalData=false&maxTransactionDepth=10&type=ProductMediaOU&asin="+asin;
-	 	String imgid = "";
-			try {
-			
-				String physids = sendHttpGet.sendGet(getimg);
-				Document imgdoc = Jsoup.parse(physids);
-				Element img = imgdoc.select("physicalID").get(0);
-				imgid = img.text();
-			 				
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			return imgid;
-	}
-
-
-
-public static String fetchImgUrl (String asin) throws Exception {
-
-	if (asin == null) return null;
-	
-	 		String imgid = getAttributes.getImgid(asin);
- 			String imgurl = "http://ecx.images-amazon.com/images/I/"+imgid+".jpg";
-  			return imgurl;	
-}
-
-
-
-
-public static String getTitle(String asin, String mplace) {
-	
-	String json = "{\"allAttrs\": false, "+
-			 "\"asins\": \""+ asin +"\", "+
-			 "\"returnAttrs\": "+
-			 "[\"BIW.title\"], "+
-			 "\"user\": \"pulapart\"}";
-	
-	
-	String vip = "" ;
-	 if (mplace.equals("US")) { vip ="http://if-us.amazon.com/searchByAsins" ;  } 
-	    else if (mplace.equals("UK")) { vip = "http://if-gb.amazon.com/searchByAsins" ; }
-	    else if (mplace.equals("CA")) { vip = "http://if-ca.amazon.com/searchByAsins" ; }
-	    else if (mplace.equals("DE")) { vip = "http://if-de.amazon.com/searchByAsins" ; }
-	    else if (mplace.equals("FR")) { vip = "http://if-fr.amazon.com/searchByAsins" ; }
-	     else if (mplace.equals("JP")) { vip = "http://if-jp.amazon.com/searchByAsins" ; }
-	 
-	String result_str = sendHttpPost.executePost(vip, json);
-	
-	return result_str;
-
-}
-
-
-public static String getcsiTitle(String asin, String mplace) {
-	
-	int mid = 0 ;
-	 if (mplace.equals("US")) { mid = 1;  } 
-	    else if (mplace.equals("UK")) { mid = 3 ; }
-	    else if (mplace.equals("CA")) { mid = 7 ; }
-	    else if (mplace.equals("DE")) { mid = 4 ; }
-	    else if (mplace.equals("FR")) { mid = 5 ; }
-	    else if (mplace.equals("ES")) { mid = 44551 ; }
-	    else if (mplace.equals("JP")) { mid = 6 ; }
-	    else if (mplace.equals("IT")) { mid = 35691 ; }
-	
-	
-	
-	String getimg = "http://csi-api.amazon.com/view?view=simple_product_data_view&item_id=" + asin + 
-			 "&marketplace_id="+ mid +"&customer_id=&merchant_id=&sku=&fn_sku=&gcid=&fulfillment_channel_code=&listing_type=purchasable"
-			+ "&submission_id=&order_id=&external_id=&search_string=&realm=USAmazon&stage=prod&domain_id=33333&keyword=&submit=Show";
-	
- 	String title = "";
- 	String html = "";
-		try {
-		
-			html = sendHttpGet.sendGet(getimg);
-			
-			if (html.contains("Invalid ASIN specified:")) throw new Exception("invalid ASIN") ;
-				
-			Document imgdoc = Jsoup.parse(html);
-			Element ttl = imgdoc.select("table").get(17);
-			
-			imgdoc = Jsoup.parse(ttl.text());
-			title = ttl.text();	
-			title = title.substring(6);
-			return title;
-			
-		} catch (Exception se) {
-				if (se.getMessage().equals("invalid ASIN")) return null;
-				return null;
-		} 
-		
-}
-
-
-
-
-
-
 public static int randInt(int min, int max) {
 
     // Usually this can be a field rather than a method variable
@@ -357,7 +198,6 @@ public static int randInt(int min, int max) {
 
     return randomNum;
 }
-
 
 
 

@@ -41,10 +41,16 @@ public class popAsins extends HttpServlet {
 			
 	        HttpSession session = request.getSession();
 			String merchid = request.getParameter("merchid");
+			merchid = merchid.trim();
 	        String mplace = request.getParameter("mplace");
 	        String sz = request.getParameter("size");
+	        sz = sz.trim();
 	        
-	    
+	        String titlekeywords = request.getParameter("titlekeywords"); 	        
+	        titlekeywords = titlekeywords.trim().replace(" ", "_");
+	        
+	        String genkeywords = request.getParameter("genkeywords"); 	        
+	        genkeywords = genkeywords.trim().replace(" ", "_");
 	        
 	        if(merchid.equals("") || mplace.equals("") || sz.equals("") ){
 	        //    throw new ServletException("Mandatory fields can't be null or empty");
@@ -57,7 +63,7 @@ public class popAsins extends HttpServlet {
 	        try {
 	        	       	
 	        	merchid = merchid.trim();
-	        	String[] asins = getAttributes.fetchSampleasins(merchid, mplace, size);
+	        	String[] asins = getAttributes.fetchSampleasins(merchid, mplace, titlekeywords, genkeywords, size);
 	        		
 	        	if ( asins == null ) throw new Exception ("no asins");
 	        		
@@ -140,7 +146,7 @@ public class popAsins extends HttpServlet {
 	        		
 	        		out.write("<html><head></head><body>");
     				out.write("<br>");out.write("<br>");out.write("<br>");
-    				out.write("<Center>Couldnt fetch sample size for given input</Center>");
+    				out.write("<Center>Couldnt fetch sample size for given input <br> <br>  check if input Merchant Id and Marketplace are correct <br> <br> else try different keywords as input</Center>");
     				out.write("<br>");out.write("<br>");out.write("<br>");
     				out.write("</body></html>"); 	
 	        		
